@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ngân Hải – Thông tin nhân sự</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f2fb; --card: #ffffff; --text: #1f1f24; --muted: #5f6070; --line: #d9d7e6;
+    --accent: #4b3fd1; --accent-ink: #ffffff; --error: #b3261e; --ok: #1d6b3a; --hint-bg: #fff6dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15141c; --card: #201f2a; --text: #ecebf3; --muted: #a9a8b8; --line: #3a3948;
+      --accent: #9b92ff; --accent-ink: #15141c; --error: #ff8a80; --ok: #7fd49c; --hint-bg: #3a3320;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .head { border-top: 8px solid var(--accent); }
+  h1 { font-size: 1.4rem; margin: 0 0 8px; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  p { margin: 0 0 8px; color: var(--muted); }
+  label { display: block; font-weight: 600; margin: 14px 0 4px; }
+  label .req { color: var(--error); }
+  input, select { width: 100%; padding: 12px; font-size: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); }
+  input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  @media (max-width: 420px) { .row { grid-template-columns: 1fr; } }
+  button { font: inherit; font-weight: 600; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--accent); cursor: pointer; }
+  .primary { background: var(--accent); color: var(--accent-ink); width: 100%; }
+  .secondary { background: transparent; color: var(--accent); }
+  .link { background: none; border: none; padding: 8px 0; color: var(--accent); text-decoration: underline; font-weight: 400; }
+  #scanBox { margin-top: 12px; }
+  #reader { border-radius: 12px; overflow: hidden; background: #000; }
+  #reader video { width: 100% !important; height: auto !important; display: block; }
+  .scan-tools { display: flex; gap: 8px; margin-top: 8px; }
+  .scan-tools button { flex: 1; }
+  .hint { background: var(--hint-bg); border-radius: 8px; padding: 8px 12px; margin-top: 8px; font-size: .9rem; color: var(--text); }
+  .msg { white-space: pre-line; margin-top: 12px; font-weight: 600; }
+  .msg.error { color: var(--error); }
+  .msg.ok { color: var(--ok); }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
+  .consent input { width: auto; margin-top: 4px; }
+  .code { font-size: 1.6rem; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card head">
+    <h1>Ngân Hải – Thông tin nhân sự</h1>
+    <p>Biểu mẫu dùng để cập nhật thông tin của lao động. Anh/chị/em có trách nhiệm kê khai đầy đủ, trung thực và đảm bảo
+      tính chính xác của toàn bộ thông tin cung cấp. Trường hợp phát sinh sai sót, người khai hoàn toàn chịu trách nhiệm
+      đối với thông tin đã khai báo.</p>
+    <p class="hint" id="inAppHint" hidden>Bạn đang mở trong ứng dụng (Zalo/Facebook), camera có thể không hoạt động.
+      Bấm <b>⋯</b> ở góc trên → <b>Mở bằng trình duyệt</b> (Chrome/Safari) rồi làm tiếp.</p>
+  </div>
+
+  <form id="form" novalidate>
+    <div class="card">
+      <h2>1. Quét mã QR trên CCCD</h2>
+      <p>Mã QR ở góc trên bên phải mặt trước thẻ CCCD gắn chip. Quét xong sẽ tự điền số CCCD, họ tên, ngày sinh, ngày cấp.</p>
+      <button type="button" class="primary" id="btnScan">📷 Bật camera quét mã QR</button>
+      <div id="scanBox" hidden>
+        <div id="reader"></div>
+        <p class="hint">Đưa <b>mã QR</b> vào giữa khung, cách khoảng 10–15 cm, giữ yên 1–2 giây. Camera tự nhận, không cần bấm chụp.</p>
+        <div class="scan-tools">
+          <button type="button" class="secondary" id="btnTorch" hidden>💡 Bật đèn</button>
+          <button type="button" class="secondary" id="btnStop">✖ Tắt camera</button>
+        </div>
+      </div>
+      <button type="button" class="link" id="btnPhoto">Không mở được camera? Chụp ảnh mã QR thay thế</button>
+      <input type="file" id="photo" accept="image/*" capture="environment" hidden>
+      <div id="fileReader" hidden></div>
+      <div id="qrMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Thông tin cá nhân</h2>
+      <label for="ho_ten">Họ và tên <span class="req">*</span></label>
+      <input id="ho_ten" name="ho_ten" autocomplete="name" required>
+      <div class="row">
+        <div>
+          <label for="ngay_sinh">Ngày sinh <span class="req">*</span></label>
+          <input id="ngay_sinh" name="ngay_sinh" class="date" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" required>
+        </div>
+        <div>
+          <label for="cccd">Số CCCD <span class="req">*</span></label>
+          <input id="cccd" name="cccd" inputmode="numeric" maxlength="12" placeholder="12 chữ số" required>
+        </div>
+      </div>
+      <label for="que_quan">Nơi sinh / Quê quán <span class="req">*</span></label>
+      <input id="que_quan" name="que_quan" placeholder="VD: Hải Bình, Thanh Hóa" required>
+      <div class="row">
+        <div>
+          <label for="ngay_cap">Ngày cấp <span class="req">*</span></label>
+          <input id="ngay_cap" name="ngay_cap" class="date" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" required>
+        </div>
+        <div>
+          <label for="noi_cap_chon">Nơi cấp <span class="req">*</span></label>
+          <select id="noi_cap_chon">
+            <option value="">– Chọn –</option>
+            <option>Cục CS QLHC về TTXH</option>
+            <option>Bộ Công an</option>
+            <option value="khac">Khác (ghi rõ)</option>
+          </select>
+          <input id="noi_cap_khac" placeholder="Ghi rõ nơi cấp" hidden>
+        </div>
+      </div>
+      <label for="dc_thuong_tru">Địa chỉ thường trú (sau sáp nhập) <span class="req">*</span></label>
+      <input id="dc_thuong_tru" name="dc_thuong_tru" placeholder="Thôn/xóm, Xã/Phường, Tỉnh/Thành phố" required>
+      <div id="addrHint" class="hint" hidden></div>
+      <label for="dc_tam_tru">Địa chỉ tạm trú (sau sáp nhập) <span class="req">*</span></label>
+      <input id="dc_tam_tru" name="dc_tam_tru" placeholder="Ghi giống thường trú nếu không có" required>
+      <div class="row">
+        <div>
+          <label for="trinh_do">Trình độ văn hóa</label>
+          <input id="trinh_do" name="trinh_do" list="dsTrinhDo">
+          <datalist id="dsTrinhDo">
+            <option>Tiểu học</option><option>THCS (9/12)</option><option>THPT (12/12)</option>
+            <option>Trung cấp</option><option>Cao đẳng</option><option>Đại học</option>
+          </datalist>
+        </div>
+        <div>
+          <label for="sdt">Số điện thoại <span class="req">*</span></label>
+          <input id="sdt" name="sdt" type="tel" inputmode="numeric" maxlength="10" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. Tài khoản nhận lương</h2>
+      <label for="so_tai_khoan">Số tài khoản ngân hàng <span class="req">*</span></label>
+      <input id="so_tai_khoan" name="so_tai_khoan" inputmode="numeric" required>
+      <label for="ngan_hang">Tên ngân hàng (ghi rõ chi nhánh) <span class="req">*</span></label>
+      <input id="ngan_hang" name="ngan_hang" list="dsNganHang" placeholder="VD: Agribank – CN Nghi Sơn, Thanh Hóa" required>
+      <datalist id="dsNganHang">
+        <option>Agribank – CN </option><option>Vietcombank – CN </option><option>VietinBank – CN </option>
+        <option>BIDV – CN </option><option>MB Bank – CN </option><option>Techcombank – CN </option>
+        <option>Sacombank – CN </option><option>VPBank – CN </option><option>ACB – CN </option>
+      </datalist>
+    </div>
+
+    <div class="card">
+      <h2>4. Người thân liên hệ khi cần</h2>
+      <label for="nguoi_than">Họ tên người thân <span class="req">*</span></label>
+      <input id="nguoi_than" name="nguoi_than" required>
+      <div class="row">
+        <div>
+          <label for="quan_he">Quan hệ <span class="req">*</span></label>
+          <input id="quan_he" name="quan_he" list="dsQuanHe" placeholder="Vợ/chồng/bố/mẹ…" required>
+          <datalist id="dsQuanHe">
+            <option>Vợ</option><option>Chồng</option><option>Bố</option><option>Mẹ</option>
+            <option>Anh</option><option>Chị</option><option>Em</option><option>Con</option>
+          </datalist>
+        </div>
+        <div>
+          <label for="sdt_nguoi_than">SĐT người thân <span class="req">*</span></label>
+          <input id="sdt_nguoi_than" name="sdt_nguoi_than" type="tel" inputmode="numeric" maxlength="10" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="consent">
+        <input type="checkbox" id="dong_y">
+        <span>Tôi xác nhận thông tin trên là đúng và đồng ý cho Công ty CP Hóa Chất &amp; Dịch Vụ Ngân Hải thu thập,
+          xử lý để lập hợp đồng, chi trả và quản lý nhân sự (Nghị định 13/2023/NĐ-CP).</span>
+      </label>
+      <button type="submit" class="primary" id="btnSubmit" style="margin-top:16px">Gửi thông tin</button>
+      <div id="formMsg" class="msg"></div>
+    </div>
+  </form>
+
+  <div class="card" id="done" hidden>
+    <h2 id="doneTitle"></h2>
+    <p>Mã nhân viên của bạn:</p>
+    <p class="code" id="doneCode"></p>
+    <p>Hãy chụp màn hình lại. Phòng Nhân sự dùng mã này để làm hợp đồng cho các lần sau, bạn không cần khai lại.</p>
+    <button type="button" class="secondary" id="btnAgain">Nhập cho người khác</button>
+  </div>
+</main>
+
+<script>
+// Link /exec của Apps Script (webform/Code.gs) nhận dữ liệu. Đổi nếu triển khai Apps Script mới.
+const API_URL = 'https://script.google.com/macros/s/AKfycbzOCfQqX3hClNGT7ggw68FSiucLcfpNjL4VmdCAjlD5zIdxMivYeBNQmTa1HcxDgaIb/exec';
+const PARAMS = new URLSearchParams(location.search);
+
+// BEGIN qr-parse (được test bởi tests/test_webform.py)
+/** Chuỗi QR trên CCCD gắn chip: CCCD|CMND cũ|Họ tên|ddmmyyyy|Giới tính|Địa chỉ|ddmmyyyy(ngày cấp)|… */
+function parseCccdQr(text) {
+  const parts = String(text || '').trim().split('|');
+  if (parts.length < 7 || !/^\d{12}$/.test(parts[0])) return null;
+  const dmy = s => /^\d{8}$/.test(s) ? s.slice(0, 2) + '/' + s.slice(2, 4) + '/' + s.slice(4) : '';
+  return { cccd: parts[0], ho_ten: parts[2].trim(), ngay_sinh: dmy(parts[3]), dia_chi: parts[5].trim(), ngay_cap: dmy(parts[6]) };
+}
+
+/** Căn cước cấp từ 01/07/2024 do Bộ Công an cấp; CCCD gắn chip trước đó do Cục CS QLHC về TTXH cấp. */
+function guessIssuer(dmy) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy || '');
+  if (!m) return '';
+  return m[3] + m[2] + m[1] >= '20240701' ? 'Bộ Công an' : 'Cục CS QLHC về TTXH';
+}
+
+/** Tự chèn dấu / khi gõ ngày: 10061985 -> 10/06/1985. */
+function formatDateTyping(v) {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  return [d.slice(0, 2), d.slice(2, 4), d.slice(4)].filter(Boolean).join('/');
+}
+
+/** Trình duyệt trong Zalo/Facebook/Messenger thường chặn camera. */
+function isInAppBrowser(ua) {
+  return /Zalo|FBAN|FBAV|FB_IAB|Messenger|Instagram/i.test(ua || '');
+}
+// END qr-parse
+
+const $ = id => document.getElementById(id);
+const FIELDS = ['ho_ten', 'ngay_sinh', 'que_quan', 'cccd', 'ngay_cap', 'dc_thuong_tru', 'dc_tam_tru', 'trinh_do',
+  'sdt', 'so_tai_khoan', 'ngan_hang', 'nguoi_than', 'quan_he', 'sdt_nguoi_than'];
+const QR_ONLY = () => (window.Html5QrcodeSupportedFormats ? [Html5QrcodeSupportedFormats.QR_CODE] : undefined);
+let scanner = null;
+
+$('inAppHint').hidden = !isInAppBrowser(navigator.userAgent);
+document.querySelectorAll('input.date').forEach(el =>
+  el.addEventListener('input', () => { el.value = formatDateTyping(el.value); }));
+$('noi_cap_chon').addEventListener('change', () => { $('noi_cap_khac').hidden = $('noi_cap_chon').value !== 'khac'; });
+
+function showQrMsg(kind, text) {
+  $('qrMsg').className = 'msg ' + kind;
+  $('qrMsg').textContent = text;
+}
+
+function applyQr(text) {
+  const info = parseCccdQr(text);
+  if (!info) {
+    showQrMsg('error', 'Mã vừa quét không phải mã QR của CCCD. Đưa đúng mã QR ở góc trên bên phải mặt trước thẻ.');
+    return false;
+  }
+  ['cccd', 'ho_ten', 'ngay_sinh', 'ngay_cap'].forEach(k => { if (info[k]) $(k).value = info[k]; });
+  const issuer = guessIssuer(info.ngay_cap);
+  if (issuer) { $('noi_cap_chon').value = issuer; $('noi_cap_khac').hidden = true; }
+  if (info.dia_chi) {
+    $('addrHint').hidden = false;
+    $('addrHint').textContent = 'Địa chỉ trên thẻ (trước sáp nhập): ' + info.dia_chi +
+      '. Vui lòng ghi lại địa chỉ MỚI sau sáp nhập ở ô trên.';
+  }
+  if (navigator.vibrate) navigator.vibrate(150);
+  showQrMsg('ok', '✔ Đã điền từ CCCD: ' + info.ho_ten + ' – ' + info.cccd + '. Kiểm tra lại và nhập các mục còn lại.');
+  $('que_quan').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return true;
+}
+
+// ---------- Quét trực tiếp bằng camera ----------
+async function startCamera() {
+  if (typeof Html5Qrcode === 'undefined') {
+    showQrMsg('error', 'Không tải được trình quét QR (kiểm tra mạng). Bạn vẫn có thể nhập tay.');
+    return;
+  }
+  $('scanBox').hidden = false;
+  $('btnScan').hidden = true;
+  showQrMsg('', '');
+  scanner = scanner || new Html5Qrcode('reader', {
+    formatsToSupport: QR_ONLY(), verbose: false, experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+  });
+  const config = {
+    fps: 15,
+    qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.8); return { width: s, height: s }; },
+    // Độ phân giải cao giúp đọc mã QR dày đặc của CCCD.
+    videoConstraints: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+  };
+  try {
+    await scanner.start({ facingMode: 'environment' }, config, text => { if (applyQr(text)) stopCamera(); }, () => {});
+    setupTorch();
+  } catch (err) {
+    stopCamera();
+    showQrMsg('error', 'Không mở được camera. Hãy cho phép trình duyệt dùng camera (biểu tượng ổ khóa cạnh địa chỉ web), '
+      + 'hoặc dùng "Chụp ảnh mã QR thay thế" bên dưới.');
+  }
+}
+
+function setupTorch() {
+  try {
+    const torch = scanner.getRunningTrackCameraCapabilities().torchFeature();
+    if (!torch.isSupported()) return;
+    $('btnTorch').hidden = false;
+    $('btnTorch').onclick = async () => {
+      await torch.apply(!torch.value());
+      $('btnTorch').textContent = torch.value() ? '💡 Tắt đèn' : '💡 Bật đèn';
+    };
+  } catch (e) { /* trình duyệt không hỗ trợ đèn */ }
+}
+
+function stopCamera() {
+  $('scanBox').hidden = true;
+  $('btnScan').hidden = false;
+  $('btnTorch').hidden = true;
+  if (scanner && scanner.isScanning) scanner.stop().catch(() => {});
+}
+
+$('btnScan').addEventListener('click', startCamera);
+$('btnStop').addEventListener('click', stopCamera);
+
+// ---------- Dự phòng: chụp ảnh ----------
+/** Thu nhỏ ảnh: ảnh 12MP để nguyên thường đọc trượt mã QR nhỏ. */
+async function resized(file, maxSide) {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * k);
+  canvas.height = Math.round(bmp.height * k);
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+  return new File([blob], 'qr.jpg', { type: 'image/jpeg' });
+}
+
+async function decodeImage(file) {
+  if ('BarcodeDetector' in window) {  // bộ đọc có sẵn của trình duyệt (Android Chrome): đọc tốt ảnh lớn
+    try {
+      const codes = await new BarcodeDetector({ formats: ['qr_code'] }).detect(await createImageBitmap(file));
+      if (codes.length) return codes[0].rawValue;
+    } catch (e) { /* thử cách khác */ }
+  }
+  const reader = new Html5Qrcode('fileReader', { formatsToSupport: QR_ONLY(), verbose: false });
+  for (const side of [1600, 1100, 2400]) {
+    try { return await reader.scanFile(await resized(file, side), false); } catch (e) { /* thử cỡ khác */ }
+  }
+  throw new Error('Không đọc được');
+}
+
+$('btnPhoto').addEventListener('click', () => { stopCamera(); $('photo').click(); });
+$('photo').addEventListener('change', async () => {
+  const file = $('photo').files[0];
+  $('photo').value = '';
+  if (!file || typeof Html5Qrcode === 'undefined') return;
+  showQrMsg('', 'Đang đọc mã QR…');
+  try {
+    applyQr(await decodeImage(file));
+  } catch (e) {
+    showQrMsg('error', 'Không đọc được mã QR trong ảnh. Chụp gần hơn để mã QR chiếm khoảng nửa khung hình, đủ sáng, rõ nét.');
+  }
+});
+
+// ---------- Gửi ----------
+function collect() {
+  const data = { ma: PARAMS.get('ma') || '', ma_dot: PARAMS.get('dot') || '', dong_y: $('dong_y').checked };
+  FIELDS.forEach(k => { data[k] = $(k).value.trim(); });
+  data.noi_cap = $('noi_cap_chon').value === 'khac' ? $('noi_cap_khac').value.trim() : $('noi_cap_chon').value;
+  return data;
+}
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('btnSubmit'), msg = $('formMsg');
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi…';
+  msg.className = 'msg';
+  msg.textContent = '';
+  try {
+    // text/plain: yêu cầu "đơn giản", trình duyệt không gửi preflight CORS (Apps Script không trả lời OPTIONS).
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(collect()),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(r => r.json());
+    if (!res.ok) throw new Error(res.error);
+    stopCamera();
+    $('form').hidden = true;
+    $('done').hidden = false;
+    $('doneTitle').textContent = (res.capNhat ? '✔ Đã cập nhật thông tin của ' : '✔ Đã gửi thông tin của ') + res.ten;
+    $('doneCode').textContent = res.maNv;
+    window.scrollTo(0, 0);
+  } catch (err) {
+    msg.className = 'msg error';
+    msg.textContent = err instanceof TypeError
+      ? 'Không gửi được. Kiểm tra kết nối mạng rồi bấm Gửi lại.'
+      : err instanceof SyntaxError  // Apps Script trả trang lỗi thay vì JSON: chưa triển khai bản mới / sai quyền
+        ? 'Hệ thống nhận dữ liệu chưa sẵn sàng. Vui lòng báo phòng Nhân sự.'
+        : String(err.message || err).replace(/^Error:\s*/, '');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gửi thông tin';
+  }
+});
+
+$('btnAgain').addEventListener('click', () => {
+  $('form').reset();
+  $('noi_cap_khac').hidden = true;
+  $('addrHint').hidden = true;
+  showQrMsg('', '');
+  $('formMsg').textContent = '';
+  $('done').hidden = true;
+  $('form').hidden = false;
+  window.scrollTo(0, 0);
+});
+</script>
+</body>
+</html>
