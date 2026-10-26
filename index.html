@@ -192,6 +192,9 @@
     <h2 id="doneTitle"></h2>
     <p>Mã nhân viên của bạn:</p>
     <p class="code" id="doneCode"></p>
+    <p class="hint" id="doneNote" hidden>Bạn đã có hồ sơ từ trước nên lần khai này <b>cập nhật</b> thông tin cũ, Mã nhân viên
+      giữ nguyên. Các đợt làm việc sau <b>không cần khai lại</b>: phòng Nhân sự sẽ chọn lại hồ sơ của bạn khi làm hợp đồng.
+      Chỉ khai lại khi có thông tin thay đổi (số tài khoản, địa chỉ, số điện thoại…).</p>
     <p>Hãy chụp màn hình lại. Phòng Nhân sự dùng mã này để làm hợp đồng cho các lần sau, bạn không cần khai lại.</p>
     <button type="button" class="secondary" id="btnAgain">Nhập cho người khác</button>
   </div>
@@ -557,6 +560,7 @@ $('form').addEventListener('submit', async e => {
     $('done').hidden = false;
     $('doneTitle').textContent = (res.capNhat ? '✔ Đã cập nhật thông tin của ' : '✔ Đã gửi thông tin của ') + res.ten;
     $('doneCode').textContent = res.maNv;
+    $('doneNote').hidden = !res.capNhat;
     window.scrollTo(0, 0);
   } catch (err) {
     msg.className = 'msg error';
