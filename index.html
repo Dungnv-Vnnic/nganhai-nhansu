@@ -53,6 +53,7 @@
   .msg.ok { color: var(--ok); }
   .consent { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
   .consent input { width: auto; margin-top: 4px; }
+  .consent-text { color: var(--text); }
   .code { font-size: 1.6rem; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
   [hidden] { display: none !important; }
 </style>
@@ -178,10 +179,14 @@
     </div>
 
     <div class="card">
+      <h2>XÁC NHẬN ĐỒNG Ý XỬ LÝ DỮ LIỆU CÁ NHÂN</h2>
+      <p class="consent-text">1/ Tôi xác nhận đã được Công ty thông báo về việc thu thập, sử dụng và xử lý dữ liệu cá nhân
+        phục vụ công tác tuyển dụng, quản lý và thực hiện quan hệ lao động.</p>
+      <p class="consent-text">2/ Tôi đồng ý cho Công ty Cổ phần Hóa chất &amp; Dịch vụ Ngân Hải thu thập, lưu trữ, sử dụng
+        và xử lý dữ liệu cá nhân của tôi trong phạm vi, mục đích phù hợp với quy định pháp luật.</p>
       <label class="consent">
         <input type="checkbox" id="dong_y">
-        <span>Tôi xác nhận thông tin trên là đúng và đồng ý cho Công ty CP Hóa Chất &amp; Dịch Vụ Ngân Hải thu thập,
-          xử lý để lập hợp đồng, chi trả và quản lý nhân sự (Nghị định 13/2023/NĐ-CP).</span>
+        <span><b>ĐỒNG Ý</b> cho Công ty xử lý dữ liệu cá nhân.</span>
       </label>
       <button type="submit" class="primary" id="btnSubmit" style="margin-top:16px">Gửi thông tin</button>
       <div id="formMsg" class="msg"></div>
