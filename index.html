@@ -31,7 +31,8 @@
   input, select { width: 100%; padding: 12px; font-size: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); }
   input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
-  @media (max-width: 420px) { .row { grid-template-columns: 1fr; } }
+  .row.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 420px) { .row, .row.three { grid-template-columns: 1fr; } }
   button { font: inherit; font-weight: 600; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--accent); cursor: pointer; }
   .primary { background: var(--accent); color: var(--accent-ink); width: 100%; }
   .secondary { background: transparent; color: var(--accent); }
@@ -104,6 +105,29 @@
         <div>
           <label for="cccd">Số CCCD <span class="req">*</span></label>
           <input id="cccd" name="cccd" inputmode="numeric" maxlength="12" placeholder="12 chữ số" required>
+        </div>
+      </div>
+      <div class="row three">
+        <div>
+          <label for="gioi_tinh">Giới tính <span class="req">*</span></label>
+          <select id="gioi_tinh" name="gioi_tinh" required>
+            <option value="">– Chọn –</option>
+            <option>Nam</option>
+            <option>Nữ</option>
+          </select>
+        </div>
+        <div>
+          <label for="dan_toc">Dân tộc <span class="req">*</span></label>
+          <input id="dan_toc" name="dan_toc" list="dsDanToc" placeholder="VD: Kinh" required>
+          <datalist id="dsDanToc">
+            <option>Kinh</option><option>Mường</option><option>Thái</option><option>Tày</option><option>Nùng</option>
+            <option>H'Mông</option><option>Dao</option><option>Khmer</option><option>Hoa</option><option>Thổ</option>
+            <option>Sán Chay</option><option>Gia Rai</option><option>Ê Đê</option><option>Ba Na</option>
+          </datalist>
+        </div>
+        <div>
+          <label for="quoc_tich">Quốc tịch <span class="req">*</span></label>
+          <input id="quoc_tich" name="quoc_tich" value="Việt Nam" required>
         </div>
       </div>
       <label for="que_quan">Nơi sinh / Quê quán <span class="req">*</span></label>
@@ -216,7 +240,9 @@ function parseCccdQr(text) {
   const parts = String(text || '').trim().split('|');
   if (parts.length < 7 || !/^\d{12}$/.test(parts[0])) return null;
   const dmy = s => /^\d{8}$/.test(s) ? s.slice(0, 2) + '/' + s.slice(2, 4) + '/' + s.slice(4) : '';
-  return { cccd: parts[0], ho_ten: parts[2].trim(), ngay_sinh: dmy(parts[3]), dia_chi: parts[5].trim(), ngay_cap: dmy(parts[6]) };
+  const gender = parts[4].trim().normalize('NFC');
+  return { cccd: parts[0], ho_ten: parts[2].trim(), ngay_sinh: dmy(parts[3]), dia_chi: parts[5].trim(), ngay_cap: dmy(parts[6]),
+    gioi_tinh: gender === 'Nam' || gender === 'Nữ' ? gender : '' };
 }
 
 /** Căn cước cấp từ 01/07/2024 do Bộ Công an cấp; CCCD gắn chip trước đó do Cục CS QLHC về TTXH cấp. */
@@ -318,8 +344,8 @@ function variantPixels(rgba, w, h, variant) {
 // END scan-core
 
 const $ = id => document.getElementById(id);
-const FIELDS = ['ho_ten', 'ngay_sinh', 'que_quan', 'cccd', 'ngay_cap', 'dc_thuong_tru', 'dc_tam_tru', 'trinh_do',
-  'sdt', 'so_tai_khoan', 'ngan_hang', 'nguoi_than', 'quan_he', 'sdt_nguoi_than'];
+const FIELDS = ['ho_ten', 'gioi_tinh', 'ngay_sinh', 'dan_toc', 'quoc_tich', 'que_quan', 'cccd', 'ngay_cap', 'dc_thuong_tru',
+  'dc_tam_tru', 'trinh_do', 'sdt', 'so_tai_khoan', 'ngan_hang', 'nguoi_than', 'quan_he', 'sdt_nguoi_than'];
 const READ_OPTS = { formats: ['QRCode'], tryHarder: true, maxNumberOfSymbols: 1 };
 let cam = null;  // camera đang mở: { stream, track, timer, frames, zx, started, native, canvas, ctx }
 let torchOn = false;
@@ -340,7 +366,7 @@ function applyQr(text) {
     showQrMsg('error', 'Mã vừa quét không phải mã QR của CCCD. Đưa đúng mã QR ở góc trên bên phải mặt trước thẻ.');
     return false;
   }
-  ['cccd', 'ho_ten', 'ngay_sinh', 'ngay_cap'].forEach(k => { if (info[k]) $(k).value = info[k]; });
+  ['cccd', 'ho_ten', 'gioi_tinh', 'ngay_sinh', 'ngay_cap'].forEach(k => { if (info[k]) $(k).value = info[k]; });
   const issuer = guessIssuer(info.ngay_cap);
   if (issuer) { $('noi_cap_chon').value = issuer; $('noi_cap_khac').hidden = true; }
   if (info.dia_chi) {
